@@ -21,7 +21,7 @@ variable "pages_project_name" {
 
 variable "subdomain_prefix" {
   type        = string
-  default     = "data-byok.lab"
+  default     = "lab-data-byok"
   description = "Subdomain prefix under domain_name."
 }
 
