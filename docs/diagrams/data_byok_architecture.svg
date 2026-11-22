@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" width="1200" height="680" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+  <defs>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
+    </marker>
+    <marker id="arr-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669" />
+    </marker>
+    <marker id="arr-crimson" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626" />
+    </marker>
+  </defs>
+
+  <rect width="1200" height="680" fill="#f8fafc" />
+
+  <!-- Header -->
+  <text x="40" y="42" fill="#0f172a" font-size="20" font-weight="700">Lab 7: Data Classification, Masking &amp; BYOK Crypto-Shredding (/data-byok)</text>
+  <text x="40" y="64" fill="#64748b" font-size="13">Archetype A: 3-Seat Role-Play (Customer KYC ↔ Data/AI Analyst ↔ DPO KMS) · Edge Worker DLP (STATE_KV 1h TTL) + WebCrypto</text>
+
+  <!-- Seat 1 / Phase 1 -->
+  <rect x="40" y="96" width="350" height="390" rx="12" fill="#ffffff" stroke="#2563eb" stroke-width="1.5" />
+  <rect x="56" y="112" width="318" height="24" rx="4" fill="#eff6ff" />
+  <text x="68" y="128" fill="#1e40af" font-size="11" font-weight="700">SEAT 1 · CUSTOMER KYC &amp; EDGE DLP</text>
+
+  <rect x="60" y="156" width="310" height="74" rx="8" fill="#fef2f2" stroke="#fecaca" />
+  <text x="74" y="178" fill="#991b1b" font-size="12.5" font-weight="700">Gate 1: Secret Scanner (DLP-003 · 7A)</text>
+  <text x="74" y="196" fill="#475569" font-size="11">Blocks raw api_key / bearer / AKIA (HTTP 403)</text>
+  <text x="74" y="214" fill="#64748b" font-size="10.5" font-family="monospace">functions/api/data-byok/tokenize.ts</text>
+
+  <rect x="60" y="250" width="310" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" />
+  <text x="74" y="272" fill="#0f172a" font-size="12.5" font-weight="700">Gate 2: PII / PCI Classifier</text>
+  <text x="74" y="290" fill="#475569" font-size="11">DLP-001 (PAN) · DLP-002 (SSN) · DLP-004 (NRIC/MyKad)</text>
+  <text x="74" y="308" fill="#64748b" font-size="10.5" font-family="monospace">src/contracts/dataByokContract.ts</text>
+
+  <rect x="60" y="344" width="310" height="74" rx="8" fill="#ecfdf5" stroke="#a7f3d0" />
+  <text x="74" y="366" fill="#065f46" font-size="12.5" font-weight="700">Gate 3: SHA-256 Tokenizer + STATE_KV</text>
+  <text x="74" y="384" fill="#475569" font-size="11">tok_&lt;type&gt;_&lt;8hex&gt; stored w/ 1h TTL (3600s)</text>
+  <text x="74" y="402" fill="#64748b" font-size="10.5" font-family="monospace">lab7:byok:${sessionId} + browser fallback</text>
+
+  <line x1="215" y1="230" x2="215" y2="250" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-blue)" />
+  <line x1="215" y1="324" x2="215" y2="344" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-emerald)" />
+
+  <!-- Seat 2 / Phase 2 -->
+  <rect x="425" y="96" width="350" height="390" rx="12" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+  <rect x="441" y="112" width="318" height="24" rx="4" fill="#ecfdf5" />
+  <text x="453" y="128" fill="#065f46" font-size="11" font-weight="700">SEAT 2 · BI/LLM ANALYST &amp; ENVELOPE</text>
+
+  <rect x="445" y="156" width="310" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" />
+  <text x="459" y="178" fill="#0f172a" font-size="12.5" font-weight="700">Ephemeral AES-GCM-256 DEK + AAD</text>
+  <text x="459" y="196" fill="#475569" font-size="11">96-bit IV + AAD: tenant_id|record_id|key_version</text>
+  <text x="459" y="214" fill="#64748b" font-size="10.5" font-family="monospace">crypto.subtle.encrypt(AES-GCM, 256)</text>
+
+  <rect x="445" y="250" width="310" height="74" rx="8" fill="#eff6ff" stroke="#bfdbfe" />
+  <text x="459" y="272" fill="#1e40af" font-size="12.5" font-weight="700">Non-Extractable Tenant KEK Wrap</text>
+  <text x="459" y="290" fill="#475569" font-size="11">AES-KW-256 (extractable: false) wraps DEK</text>
+  <text x="459" y="308" fill="#64748b" font-size="10.5" font-family="monospace">crypto.subtle.wrapKey / unwrapKey</text>
+
+  <rect x="445" y="344" width="310" height="74" rx="8" fill="#f8fafc" stroke="#cbd5e1" />
+  <text x="459" y="366" fill="#0f172a" font-size="12.5" font-weight="700">Tokenized Read-Only &amp; Red-Team 7B/7C/7D</text>
+  <text x="459" y="384" fill="#475569" font-size="11">AI sees pseudonyms only · 7C Mismatch · 7D Tamper</text>
+  <text x="459" y="402" fill="#64748b" font-size="10.5" font-family="monospace">TENANT_KEY_MISMATCH / INTEGRITY_CHECK_FAILED</text>
+
+  <line x1="600" y1="230" x2="600" y2="250" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-emerald)" />
+  <line x1="600" y1="324" x2="600" y2="344" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-blue)" />
+
+  <!-- Seat 3 / Phase 3 & 4 -->
+  <rect x="810" y="96" width="350" height="390" rx="12" fill="#ffffff" stroke="#dc2626" stroke-width="1.5" />
+  <rect x="826" y="112" width="318" height="24" rx="4" fill="#fef2f2" />
+  <text x="838" y="128" fill="#991b1b" font-size="11" font-weight="700">SEAT 3 · DPO KMS &amp; BLAST-RADIUS TRAP</text>
+
+  <rect x="830" y="156" width="310" height="74" rx="8" fill="#fef3c7" stroke="#fde68a" />
+  <text x="844" y="178" fill="#92400e" font-size="12.5" font-weight="700">Shared Global KEK Trap (HTTP 409)</text>
+  <text x="844" y="196" fill="#475569" font-size="11">Blocks collateral destruction of 2 sibling tenants</text>
+  <text x="844" y="214" fill="#64748b" font-size="10.5" font-family="monospace">SHARED_KEK_COLLATERAL_BLAST_RADIUS</text>
+
+  <rect x="830" y="250" width="310" height="74" rx="8" fill="#fef2f2" stroke="#fecaca" />
+  <text x="844" y="272" fill="#991b1b" font-size="12.5" font-weight="700">Per-Tenant BYOK Revoke (Crypto-Shred)</text>
+  <text x="844" y="290" fill="#475569" font-size="11">Destroys kek-tenant-apac-01-v1 (0 sibling impact)</text>
+  <text x="844" y="308" fill="#64748b" font-size="10.5" font-family="monospace">action: 'revoke_kek' -&gt; status: 'REVOKED'</text>
+
+  <rect x="830" y="344" width="310" height="74" rx="8" fill="#ecfdf5" stroke="#a7f3d0" />
+  <text x="844" y="366" fill="#065f46" font-size="12.5" font-weight="700">Scenario 7B &amp; Phase 4 Reflection Debrief</text>
+  <text x="844" y="384" fill="#475569" font-size="11">Post-revoke read returns HTTP 410 Permanently Shredded</text>
+  <text x="844" y="402" fill="#64748b" font-size="10.5" font-family="monospace">CRYPTO_SHREDDED_KEY_REVOKED (5/5 Traps)</text>
+
+  <line x1="985" y1="230" x2="985" y2="250" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arr-crimson)" />
+  <line x1="985" y1="324" x2="985" y2="344" stroke="#059669" stroke-width="1.5" marker-end="url(#arr-emerald)" />
+
+  <!-- Cross-stage arrows -->
+  <line x1="390" y1="290" x2="425" y2="290" stroke="#2563eb" stroke-width="2" marker-end="url(#arr-blue)" />
+  <line x1="775" y1="290" x2="810" y2="290" stroke="#dc2626" stroke-width="2" marker-end="url(#arr-crimson)" />
+
+  <!-- Bottom Observability Layer -->
+  <rect x="40" y="514" width="1120" height="126" rx="12" fill="#0f172a" />
+  <text x="64" y="544" fill="#94a3b8" font-size="11" font-weight="700" letter-spacing="0.5">STICKY BOTTOM X-RAY TELEMETRY DRAWER (XRAYTELEMETRYDRAWER.TSX)</text>
+  <text x="64" y="572" fill="#f8fafc" font-size="13.5" font-weight="600">Joined W3C traceparent + ObservabilitySpan Feed + Live Decoded Proof across 3 Seats</text>
+  <text x="64" y="596" fill="#cbd5e1" font-size="12">Events: DLP_TOKENIZED · DLP_SECRET_BLOCKED · ENVELOPE_ENCRYPTED · SHARED_KEY_BLAST_RADIUS_TRAPPED · KEK_REVOKED · CRYPTO_SHRED_VERIFIED</text>
+  <text x="64" y="620" fill="#64748b" font-size="11" font-family="monospace">repo: c2pig/0trust.dev · src/pages/DataByokPage.tsx + functions/api/data-byok/tokenize.ts · $0.00 Sandbox</text>
+</svg>

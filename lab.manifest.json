@@ -1,0 +1,38 @@
+{
+  "id": "data-byok",
+  "title": "Data Classification, Masking & BYOK Crypto-Shredding",
+  "domainLabel": "Data & Cryptography",
+  "description": "Tokenize PII/PCI at the edge, encrypt with real browser WebCrypto envelope keys, and prove irreversible tenant key revocation.",
+  "repo": "c2pig/0trust-lab-data-byok",
+  "routePath": "/data-byok",
+  "standaloneUrl": "https://data-byok.lab.0trust.dev",
+  "localDevPort": 5176,
+  "archetype": "A",
+  "seats": [
+    {
+      "id": "customer-kyc",
+      "persona": "Mei-Ling Tan",
+      "roleLabel": "Customer · KYC & Privacy",
+      "appLabel": "FinCore KYC & Privacy Center"
+    },
+    {
+      "id": "ai-analyst",
+      "persona": "Devon Park",
+      "roleLabel": "Data/AI Analyst · BI/LLM",
+      "appLabel": "BI & LLM Risk Workbench"
+    },
+    {
+      "id": "dpo-kms",
+      "persona": "Elena Rostova",
+      "roleLabel": "DPO · KMS Console",
+      "appLabel": "BYOK Key Management & Shredder"
+    }
+  ],
+  "apiEndpoints": ["/api/data-byok/tokenize"],
+  "kvPrefixes": ["lab7:byok:"],
+  "infraDependencies": ["managed-infrastructure/modules/cloudflare-pages-lab"],
+  "diagrams": {
+    "localArchitectureMd": "docs/ARCHITECTURE.md",
+    "zoominSvg": "docs/diagrams/data_byok_architecture.svg"
+  }
+}
