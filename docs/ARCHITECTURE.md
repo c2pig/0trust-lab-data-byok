@@ -70,3 +70,10 @@ flowchart TB
 4. **Per-Tenant BYOK Isolation vs. Shared-Key Blast-Radius Trap**: Attempting to revoke a shared multi-tenant KEK fails closed with `HTTP 409 SHARED_KEK_COLLATERAL_BLAST_RADIUS` (protecting `14,820` records across `tenant-emea-99` and `tenant-amer-42`), whereas revoking `kek-tenant-apac-01-v1` crypto-shreds only `tenant-apac-01` (`Scenario 7B: CRYPTO_SHREDDED_KEY_REVOKED`) and rejects foreign tenant keys (`Scenario 7C: TENANT_KEY_MISMATCH`).
 5. **Per-Visitor `STATE_KV` Hygiene (`1h TTL`) & End-to-End Traceability**: All Edge state under `lab7:byok:${sessionId}` expires automatically in `3600s` (`1h TTL`), and every action streams an `ObservabilitySpan` with W3C `traceparent` to the sticky `XRayTelemetryDrawer`.
 6. **Model 1 Edge Hosting (`infra/terraform/`)**: Provisions the `0trust-lab-data-byok` Cloudflare Pages project and `STATE_KV` binding via `managed-infrastructure//modules/cloudflare-pages-lab` with `enable_custom_domain = false` (served behind `0trust-lab-router` at `https://lab.0trust.dev/data-byok`).
+
+---
+
+## Automated Hub Sync & Shell Parity
+- **Standalone Route**: Served at `https://lab.0trust.dev/data-byok` via `0trust-lab-router` (`c2pig/0trust.dev`).
+- **Hub Dispatch (`.github/workflows/sync-to-hub.yml`)**: Fires a `repository_dispatch` (`event_type: lab_contract_updated`) to `c2pig/0trust.dev` whenever `lab.manifest.json` or `docs/diagrams/*.svg` changes on `main`.
+- **Shared Shell (`@0trust/lab-shell`)**: `RoleSwitcherBar.tsx`, `XRayTelemetryDrawer.tsx`, `src/shell/index.ts`, and `src/index.css` are kept in parity with `c2pig/0trust.dev` via `scripts/sync-lab-shell.mjs`.

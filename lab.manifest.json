@@ -5,7 +5,7 @@
   "description": "Tokenize PII/PCI at the edge, encrypt with real browser WebCrypto envelope keys, and prove irreversible tenant key revocation.",
   "repo": "c2pig/0trust-lab-data-byok",
   "routePath": "/data-byok",
-  "standaloneUrl": "https://data-byok.lab.0trust.dev",
+  "standaloneUrl": "https://lab.0trust.dev/data-byok",
   "localDevPort": 5176,
   "archetype": "A",
   "seats": [
