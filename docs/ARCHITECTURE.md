@@ -3,7 +3,8 @@
 > **Zoom Level:** 2.5 (Lab Assembly + 3-Seat Role-Play + Cryptographic Boundary Mapping)  
 > **Parent Overview:** [`0trust.dev/docs/ARCHITECTURE.md`](https://github.com/c2pig/0trust.dev/blob/main/docs/ARCHITECTURE.md)  
 > **Lab Manifest:** [`lab.manifest.json`](../lab.manifest.json)  
-> **Architecture Diagram:** [`docs/diagrams/data_byok_architecture.svg`](diagrams/data_byok_architecture.svg)
+> **Architecture Diagram:** [`docs/diagrams/data_byok_architecture.svg`](diagrams/data_byok_architecture.svg)  
+> **Experience Shell:** Compact AppShell with dropdown [`RoleSwitcherBar`](../src/components/RoleSwitcherBar.tsx) (*Mei-Ling Tan · Customer* ↔ *Devon Park · Data Analyst* ↔ *Elena Rostova · Data Protection Officer*), [`driver.js`](https://driverjs.com/) orientation tour (`Lab Tour`), and sticky-bottom [`XRayTelemetryDrawer`](../src/components/XRayTelemetryDrawer.tsx).
 
 ---
 
