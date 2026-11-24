@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-server
+.git
+.github
+docs
+infra
+src/*
+!src/contracts
+tests
+*.md
+.env*
