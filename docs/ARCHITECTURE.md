@@ -18,11 +18,16 @@ flowchart TB
         S_DPO["Seat 3: Elena Rostova (DPO · KMS Console)"]
     end
 
-    subgraph S1 ["Phase 1 (Discovery): Edge DLP Classification & Tokenization"]
-        EdgeAPI["POST /api/data-byok/tokenize (Cloudflare Worker + STATE_KV 1h TTL)"]
+    subgraph Edge ["Same-Origin Routing (0trust-lab-router @ lab.0trust.dev)"]
+        Pages["Cloudflare Pages (Static SPA dist/ only)"]
+        Router["0trust-lab-router (Injects X-Lab-Router-Secret + X-Forwarded-Host)"]
+    end
+
+    subgraph S1 ["Phase 1 (Discovery): Cloud Run DLP Classification & Tokenization"]
+        EdgeAPI["POST /api/data-byok/tokenize (GCP Cloud Run Hono API + Firestore Native 1h TTL)"]
         DLP_Secret["Gate 1: Secret Scanner (DLP-003 -> HTTP 403 BLOCK)"]
         DLP_PII["Gate 2: PII / PCI Classifier (DLP-001 PAN, DLP-002 SSN, DLP-004 NRIC/MyKad)"]
-        Tokenizer["Gate 3: Deterministic SHA-256 Edge Tokenizer (tok_<type>_<8hex>)"]
+        Tokenizer["Gate 3: Deterministic SHA-256 Tokenizer (tok_<type>_<8hex>)"]
         EdgeAPI --> DLP_Secret --> DLP_PII --> Tokenizer
     end
 
@@ -30,7 +35,7 @@ flowchart TB
         DEK["Ephemeral AES-GCM-256 DEK + 96-bit CSPRNG IV"]
         AAD["AAD Binding (tenant_id|record_id|key_version)"]
         KEK["Non-Extractable Tenant KEK (AES-KW-256, extractable: false)"]
-        Envelope["Encrypted Envelope in STATE_KV (lab7:byok:<sessionId>, 1h TTL)"]
+        Envelope["Encrypted Envelope in Firestore Native (kv_state / data-byok:lab7%3Abyok%3A<sid>, sync expireAt TTL)"]
         DEK --> AAD --> KEK --> Envelope
     end
 
@@ -42,7 +47,9 @@ flowchart TB
         Revoke --> ShredCheck --> FailClosed
     end
 
-    S_Cust --> EdgeAPI
+    S_Cust --> Router
+    Router -->|"/data-byok/*"| Pages
+    Router -->|"/api/data-byok/*"| EdgeAPI
     Tokenizer --> DEK
     Envelope --> S_Analyst
     S_Cust -->|GDPR Art. 17 / PDPA Erasure Request| S_DPO
@@ -56,7 +63,7 @@ flowchart TB
 
 | Lab Stage & Seat | Plain-English Purpose | Owning File / Source |
 | :--- | :--- | :--- |
-| **Seat 1 (`customer-kyc`) — Edge DLP & Tokenization** | Classify PII/PCI/secrets at the Cloudflare Edge; fail-closed block raw secrets (`DLP-003` → `HTTP 403`) and tokenize PII/PCI into `STATE_KV` (`1h TTL`) | `functions/api/data-byok/tokenize.ts`, `src/contracts/dataByokContract.ts`, `src/engine/dataByokEngine.ts` (aligned with `agent-governance/policies/dlp-classification.json`) |
+| **Seat 1 (`customer-kyc`) — DLP & Tokenization API** | Classify PII/PCI/secrets on GCP Cloud Run (`0trust-lab-data-byok`); fail-closed block raw secrets (`DLP-003` → `HTTP 403`) and persist tokenized session state in Firestore Native (`kv_state`, `1h` synchronous `expireAt` TTL) | `server/app.ts`, `server/kvAdapter.ts`, `functions/api/data-byok/tokenize.ts`, `src/contracts/dataByokContract.ts`, `src/engine/dataByokEngine.ts` (aligned with `agent-governance/policies/dlp-classification.json`) |
 | **Seat 2 (`ai-analyst`) — WebCrypto Envelope & BI/LLM Verification** | Encrypt tokenized records with ephemeral `AES-GCM-256` DEK wrapped by non-extractable `AES-KW-256` KEK; prove BI/LLM only receives pseudonyms and verify Scenarios `7B`, `7C`, `7D` | `src/engine/dataByokEngine.ts` (`crypto.subtle`), `src/pages/DataByokPage.tsx` |
 | **Seat 3 (`dpo-kms`) — BYOK Crypto-Shredding & Shared-Key Trap** | Destroy `kek-tenant-apac-01-v1` to render all wrapped DEKs permanently unreadable while contrasting against the `HTTP 409` Shared Global KEK blast-radius trap | `functions/api/data-byok/tokenize.ts`, `src/engine/dataByokEngine.ts`, `src/pages/DataByokPage.tsx` |
 | **Shared Shell & Sticky X-Ray Telemetry** | 3-Seat `RoleSwitcherBar` + sticky bottom `XRayTelemetryDrawer` (`Security Audit Feed` + `Live Decoded Proof`) | `src/components/RoleSwitcherBar.tsx`, `src/components/XRayTelemetryDrawer.tsx`, `functions/api/_middleware.ts` |
@@ -65,12 +72,14 @@ flowchart TB
 
 ## 3. Security Invariants Enforced
 
-1. **Fail-Closed Secret Blocking (`DLP-003`, Scenario 7A)**: Any payload containing raw API keys, bearer tokens, or AWS `AKIA...` credentials is blocked at the Edge DLP gate (`HTTP 403`) and never tokenized, stored in `STATE_KV`, or forwarded.
-2. **Non-Extractable Tenant KEK**: Tenant KEKs are generated via `crypto.subtle.generateKey({ name: 'AES-KW', length: 256 }, false, ['wrapKey', 'unwrapKey'])` with `extractable: false`.
-3. **AAD & Integrity Binding (Scenario 7D)**: Every `AES-GCM` ciphertext is authenticated against `${tenant_id}|${record_id}|${key_version}` AAD; any tampering triggers `INTEGRITY_CHECK_FAILED`.
-4. **Per-Tenant BYOK Isolation vs. Shared-Key Blast-Radius Trap**: Attempting to revoke a shared multi-tenant KEK fails closed with `HTTP 409 SHARED_KEK_COLLATERAL_BLAST_RADIUS` (protecting `14,820` records across `tenant-emea-99` and `tenant-amer-42`), whereas revoking `kek-tenant-apac-01-v1` crypto-shreds only `tenant-apac-01` (`Scenario 7B: CRYPTO_SHREDDED_KEY_REVOKED`) and rejects foreign tenant keys (`Scenario 7C: TENANT_KEY_MISMATCH`).
-5. **Per-Visitor `STATE_KV` Hygiene (`1h TTL`) & End-to-End Traceability**: All Edge state under `lab7:byok:${sessionId}` expires automatically in `3600s` (`1h TTL`), and every action streams an `ObservabilitySpan` with W3C `traceparent` to the sticky `XRayTelemetryDrawer`.
-6. **Model 1 Edge Hosting (`infra/terraform/`)**: Provisions the `0trust-lab-data-byok` Cloudflare Pages project and `STATE_KV` binding via `managed-infrastructure//modules/cloudflare-pages-lab` with `enable_custom_domain = false` (served behind `0trust-lab-router` at `https://lab.0trust.dev/data-byok`).
+1. **Origin Protection & Fail-Closed Router Secret (`server/app.ts`)**: All `/api/*` requests require a constant-time (`crypto.timingSafeEqual`) match on `X-Lab-Router-Secret` injected by `0trust-lab-router`; direct `*.run.app` calls fail closed with `HTTP 403 FORBIDDEN_DIRECT_ORIGIN`. `GET /healthz` is exempt and returns `200 { ok: true, lab: "data-byok" }` without touching Firestore or secrets.
+2. **Synchronous Firestore TTL Enforcement (`server/kvAdapter.ts`)**: `FirestoreKvAdapter` stores documents in `kv_state` keyed as `data-byok:${encodeURIComponent(key)}` and synchronously returns `null` when `expireAt.toMillis() <= Date.now()` (with local `MemoryKvAdapter` fallback for zero-credential `npm run dev`).
+3. **Fail-Closed Secret Blocking (`DLP-003`, Scenario 7A)**: Any payload containing raw API keys, bearer tokens, or AWS `AKIA...` credentials is blocked at the DLP gate (`HTTP 403`) and never tokenized, stored in Firestore, or forwarded.
+4. **Non-Extractable Tenant KEK**: Tenant KEKs are generated via `crypto.subtle.generateKey({ name: 'AES-KW', length: 256 }, false, ['wrapKey', 'unwrapKey'])` with `extractable: false`.
+5. **AAD & Integrity Binding (Scenario 7D)**: Every `AES-GCM` ciphertext is authenticated against `${tenant_id}|${record_id}|${key_version}` AAD; any tampering triggers `INTEGRITY_CHECK_FAILED`.
+6. **Per-Tenant BYOK Isolation vs. Shared-Key Blast-Radius Trap**: Attempting to revoke a shared multi-tenant KEK fails closed with `HTTP 409 SHARED_KEK_COLLATERAL_BLAST_RADIUS` (protecting `14,820` records across `tenant-emea-99` and `tenant-amer-42`), whereas revoking `kek-tenant-apac-01-v1` crypto-shreds only `tenant-apac-01` (`Scenario 7B: CRYPTO_SHREDDED_KEY_REVOKED`) and rejects foreign tenant keys (`Scenario 7C: TENANT_KEY_MISMATCH`).
+7. **Per-Visitor State Hygiene (`1h TTL`) & End-to-End Traceability**: All session state under `lab7:byok:${sessionId}` expires automatically in `3600s` (`1h TTL`), and every action streams an `ObservabilitySpan` with W3C `traceparent` to the sticky `XRayTelemetryDrawer` with JWT signature redaction (`***REDACTED***`) and zero leakage of `X-Lab-Router-Secret` or `OTLP_AUTH_HEADER`.
+8. **Split Edge SPA + Cloud Run Hosting (`infra/terraform/`)**: Provisions the static Cloudflare Pages SPA (`0trust-lab-data-byok`, `dist/` only, `enable_custom_domain = false`) via `managed-infrastructure//modules/cloudflare-pages-lab` and the GCP Cloud Run API backend (`min_instance_count = 0`, `$0` idle cost) + Firestore Native state via `managed-infrastructure//modules/cloud-run-lab`, fronted by `0trust-lab-router` at `https://lab.0trust.dev/data-byok`.
 
 ---
 
