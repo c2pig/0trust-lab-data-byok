@@ -8,7 +8,7 @@ RUN npm ci
 COPY tsconfig.server.json ./
 COPY server ./server
 COPY functions ./functions
-COPY src/contracts ./src/contracts
+COPY src ./src
 RUN npm run build:server
 
 # Stage 2: Minimal production runtime (~85 MB, non-root)

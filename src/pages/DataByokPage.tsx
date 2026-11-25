@@ -464,6 +464,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
               seats={seats}
               activeSeatId={activeSeat}
               onSelectSeat={setActiveSeat}
+              variant="dropdown"
               ariaLabel="Switch workspace persona"
             />
 
