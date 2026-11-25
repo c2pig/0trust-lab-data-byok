@@ -176,7 +176,7 @@ export function createKvAdapter(options?: {
   env?: NodeJS.ProcessEnv;
 }): KVNamespace {
   const env = options?.env ?? process.env;
-  const labSlug = options?.labSlug || env.LAB_SLUG || 'data-byok';
+  const labSlug = options?.labSlug || env.LAB_SLUG || 'unknown-lab';
   const collectionName = options?.collectionName || env.FIRESTORE_COLLECTION || 'kv_state';
 
   if (shouldUseFirestore(env)) {
