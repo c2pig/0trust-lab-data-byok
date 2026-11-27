@@ -89,6 +89,10 @@ flowchart TB
 - **Remote Terraform State (`infra/terraform/backend.tf`)**: Declares `backend "gcs"` (`bucket = "0trust-dev-tfstate"`, `prefix = "labs/data-byok"`). Local `*.tfstate*` and `.terraform/` are gitignored; after one-time bucket provisioning (Uniform Bucket-Level Access, versioning enabled, `public_access_prevention = "enforced"`), operators migrate local state via `terraform init -migrate-state`.
 - **Hub Dispatch (`.github/workflows/sync-to-hub.yml`)**: Fires a `repository_dispatch` (`event_type: lab_contract_updated`) to `c2pig/0trust.dev` whenever `lab.manifest.json` or `docs/diagrams/*.svg` changes on `main`.
 - **Shared Shell & Runtime (`@0trust/lab-shell`)**: `RoleSwitcherBar.tsx` (invoked with `variant="dropdown"`), `XRayTelemetryDrawer.tsx`, `src/shell/index.ts`, `src/index.css`, `functions/api/{_middleware,_telemetry}.ts`, `server/{kvAdapter,origin,runtime,index}.ts`, and `Dockerfile` are kept in parity with `c2pig/0trust.dev` via `scripts/sync-lab-shell.mjs`.
+- **Hardened Middleware, Telemetry & Runtime**:
+  - `functions/api/_telemetry.ts`: Redacts sensitive auth headers/tokens in telemetry payloads (`***REDACTED***`).
+  - `functions/api/_middleware.ts`: Handles null-body responses safely, emits error telemetry on unhandled failures, and strips internal/sensitive headers.
+  - `server/` (`runtime.ts`, `origin.ts`, `kvAdapter.ts`, `index.ts`): Enforces fail-closed `LAB_ROUTER_SECRET` with SHA-256 `timingSafeEqual` verification, bounded OTLP flush timeouts, dev-only localhost origin allowance, `closeIdleConnections()` on shutdown, and `expireAt?.toMillis` defensive guard in `FirestoreKvAdapter`.
 
 ---
 
