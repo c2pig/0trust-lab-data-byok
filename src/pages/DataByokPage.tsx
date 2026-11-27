@@ -22,6 +22,10 @@ import {
   resetDataByokEngine,
   revokeTenantKek
 } from '../engine/dataByokEngine';
+import {
+  buildDataByokSeatBadges,
+  getDataByokActionGates
+} from '../engine/dataByokSelectors';
 import { RoleSeatItem, RoleSwitcherBar } from '../components/RoleSwitcherBar';
 import {
   XRayDecodedProofSection,
@@ -325,6 +329,9 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
         ? 'Encrypted & Stored'
         : 'Ready';
 
+  const seatBadges = buildDataByokSeatBadges(erasureRequested, isKeyRevoked);
+  const actionGates = getDataByokActionGates({ isBusy, isKeyRevoked, erasureRequested });
+
   const seats: RoleSeatItem<DataByokSeatId>[] = [
     {
       id: 'customer-kyc',
@@ -332,7 +339,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
       roleLabel: 'Customer',
       appLabel: 'Privacy & KYC Portal',
       avatarInitials: 'MT',
-      badge: erasureRequested ? { text: 'Erasure Sent', tone: 'amber' } : null
+      badge: seatBadges['customer-kyc']
     },
     {
       id: 'ai-analyst',
@@ -340,7 +347,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
       roleLabel: 'Data Analyst',
       appLabel: 'Analytics Workbench',
       avatarInitials: 'DP',
-      badge: null
+      badge: seatBadges['ai-analyst']
     },
     {
       id: 'dpo-kms',
@@ -348,10 +355,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
       roleLabel: 'Data Protection Officer',
       appLabel: 'BYOK Key Management',
       avatarInitials: 'ER',
-      badge:
-        erasureRequested && !isKeyRevoked
-          ? { text: '1 Request', tone: 'amber', pulse: true }
-          : null
+      badge: seatBadges['dpo-kms']
     }
   ];
 

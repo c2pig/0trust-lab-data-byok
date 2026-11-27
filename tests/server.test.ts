@@ -393,4 +393,38 @@ describe('Lab 7 (data-byok) Cloud Run Adapter — Security & API Invariants', ()
     const postRevokeData = (await postRevokeRes.json()) as { error_code: string };
     assert.equal(postRevokeData.error_code, 'CRYPTO_SHREDDED_KEY_REVOKED');
   });
+
+  it('rejects >64KB JSON body with 413 PAYLOAD_TOO_LARGE', async () => {
+    const app = createCloudRunApp({
+      env: { ENVIRONMENT: 'development', LAB_SLUG: 'data-byok' },
+      kv: new MemoryKvAdapter({ labSlug: 'data-byok' })
+    });
+    const oversized = JSON.stringify({
+      action: 'tokenize',
+      raw_payload: { notes: 'A'.repeat(66 * 1024) }
+    });
+    const res = await app.request('http://127.0.0.1:8080/api/data-byok/tokenize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Id': 'sess-oversized' },
+      body: oversized
+    });
+    assert.equal(res.status, 413);
+    const data = (await res.json()) as { error_code: string };
+    assert.equal(data.error_code, 'PAYLOAD_TOO_LARGE');
+  });
+
+  it('rejects malformed JSON with 400 INVALID_JSON (fail-closed)', async () => {
+    const app = createCloudRunApp({
+      env: { ENVIRONMENT: 'development', LAB_SLUG: 'data-byok' },
+      kv: new MemoryKvAdapter({ labSlug: 'data-byok' })
+    });
+    const res = await app.request('http://127.0.0.1:8080/api/data-byok/tokenize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Session-Id': 'sess-malformed' },
+      body: '{"action": "tokenize", "raw_payload": {broken'
+    });
+    assert.equal(res.status, 400);
+    const data = (await res.json()) as { error_code: string };
+    assert.equal(data.error_code, 'INVALID_JSON');
+  });
 });
