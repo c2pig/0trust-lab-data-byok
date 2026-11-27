@@ -488,7 +488,7 @@ export async function callDataByokApi<T = Record<string, unknown>>(options: {
   const tenantId = options.tenantId || 'tenant-apac-01';
   const start = performance.now();
 
-  if (typeof window !== 'undefined' && byokEdgeApiAvailable === null) {
+  if (typeof (globalThis as { window?: unknown }).window !== 'undefined' && byokEdgeApiAvailable === null) {
     try {
       const probe = await fetch('/api/state', { method: 'GET' });
       const probeCt = probe.headers.get('Content-Type') || '';
@@ -498,7 +498,7 @@ export async function callDataByokApi<T = Record<string, unknown>>(options: {
     }
   }
 
-  if (!(typeof window !== 'undefined' && byokEdgeApiAvailable === false)) {
+  if (!(typeof (globalThis as { window?: unknown }).window !== 'undefined' && byokEdgeApiAvailable === false)) {
     try {
       const res = await fetch(path, {
         method: 'POST',
@@ -519,7 +519,7 @@ export async function callDataByokApi<T = Record<string, unknown>>(options: {
 
       const contentType = res.headers.get('Content-Type') || '';
       if (contentType.includes('application/json')) {
-        if (typeof window !== 'undefined' && byokEdgeApiAvailable === null) {
+        if (typeof (globalThis as { window?: unknown }).window !== 'undefined' && byokEdgeApiAvailable === null) {
           byokEdgeApiAvailable = true;
         }
         const json = (await res.json()) as Record<string, unknown>;
@@ -550,11 +550,11 @@ export async function callDataByokApi<T = Record<string, unknown>>(options: {
           span
         };
       }
-      if (typeof window !== 'undefined' && byokEdgeApiAvailable === null) {
+      if (typeof (globalThis as { window?: unknown }).window !== 'undefined' && byokEdgeApiAvailable === null) {
         byokEdgeApiAvailable = false;
       }
     } catch {
-      if (typeof window !== 'undefined' && byokEdgeApiAvailable === null) {
+      if (typeof (globalThis as { window?: unknown }).window !== 'undefined' && byokEdgeApiAvailable === null) {
         byokEdgeApiAvailable = false;
       }
     }

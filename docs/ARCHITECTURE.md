@@ -123,3 +123,9 @@ flowchart TB
 - **Terraform PR CI Validation (`.github/workflows/ci.yml`)**: Added a least-privilege `terraform-validate` job (`terraform_version: "1.11.4"`) executing `terraform fmt -check`, `terraform init -backend=false -input=false`, and `terraform validate` on every pull request targeting `main`.
 
 - **X-Ray Telemetry Drawer Theme**: Uses Chrome DevTools Light Mode palette (`#ffffff` / `#f1f3f4` surfaces, `#dadce0` borders, `#202124` / `#5f6368` text, `#1a73e8` active indicators) for high-contrast readability.
+
+## 3-Layer Unit Testing Architecture
+
+- **Layer 1 (`tests/server.test.ts`)**: Cloud Run Hono adapter, `X-Lab-Router-Secret` fail-closed `403`, `X-Forwarded-Host` validation, TTL expiry in `MemoryKvAdapter`/`FirestoreKvAdapter`, JWT redaction, `413 PAYLOAD_TOO_LARGE`, and `400 INVALID_JSON`.
+- **Layer 2 (`tests/api.test.ts`)**: Direct `onRequestPost` (`functions/api/data-byok/tokenize.ts`) tests with `MemoryKvAdapter` covering PII tokenization, `422 SECRET_POLICY_BLOCKED`, multi-record envelope persistence, `revoke_kek` crypto-shredding, `409 SHARED_KEK_COLLATERAL_BLAST_RADIUS`, and per-session isolation.
+- **Layer 3 (`tests/engine.test.ts`, `tests/selectors.test.ts`)**: Pure DOM-free UI selectors (`src/engine/dataByokSelectors.ts`) and WebCrypto/Edge DLP engine (`src/engine/dataByokEngine.ts`) tested with `tsx --test` (`node:test`).
