@@ -37,7 +37,36 @@ interface StoredByokSessionRecord {
 
 const BYOK_KV_TTL_SECONDS = 3600;
 const MAX_PAYLOAD_BYTES = 64 * 1024;
-const ephemeralByokStore = new Map<string, StoredByokSessionRecord>();
+const MAX_EPHEMERAL_ENTRIES = 256;
+const EPHEMERAL_TTL_MS = BYOK_KV_TTL_SECONDS * 1000;
+const ephemeralByokStore = new Map<
+  string,
+  { record: StoredByokSessionRecord; expiresAt: number }
+>();
+
+function getEphemeralByok(key: string): StoredByokSessionRecord | null {
+  const entry = ephemeralByokStore.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    ephemeralByokStore.delete(key);
+    return null;
+  }
+  return entry.record;
+}
+
+function setEphemeralByok(key: string, record: StoredByokSessionRecord): void {
+  const now = Date.now();
+  for (const [k, v] of ephemeralByokStore) {
+    if (now > v.expiresAt) ephemeralByokStore.delete(k);
+  }
+  if (ephemeralByokStore.has(key)) ephemeralByokStore.delete(key);
+  while (ephemeralByokStore.size >= MAX_EPHEMERAL_ENTRIES) {
+    const oldest = ephemeralByokStore.keys().next().value;
+    if (oldest === undefined) break;
+    ephemeralByokStore.delete(oldest);
+  }
+  ephemeralByokStore.set(key, { record, expiresAt: now + EPHEMERAL_TTL_MS });
+}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -90,14 +119,12 @@ async function loadByokSession(
   if (env.STATE_KV) {
     try {
       const raw = await env.STATE_KV.get(kvKey);
-      if (raw) {
-        return JSON.parse(raw) as StoredByokSessionRecord;
-      }
+      return raw ? (JSON.parse(raw) as StoredByokSessionRecord) : null;
     } catch {
-      // Fall back to isolate-scoped Map
+      // Fall back to bounded isolate-scoped Map on KV read failure
     }
   }
-  return ephemeralByokStore.get(kvKey) || null;
+  return getEphemeralByok(kvKey);
 }
 
 async function saveByokSession(
@@ -106,7 +133,6 @@ async function saveByokSession(
   record: StoredByokSessionRecord
 ): Promise<'cloudflare-kv' | 'ephemeral-edge'> {
   const kvKey = `lab7:byok:${sessionId}`;
-  ephemeralByokStore.set(kvKey, record);
   if (env.STATE_KV) {
     try {
       await env.STATE_KV.put(kvKey, JSON.stringify(record), {
@@ -114,9 +140,11 @@ async function saveByokSession(
       });
       return 'cloudflare-kv';
     } catch {
+      setEphemeralByok(kvKey, record);
       return 'ephemeral-edge';
     }
   }
+  setEphemeralByok(kvKey, record);
   return 'ephemeral-edge';
 }
 
