@@ -1,4 +1,5 @@
 import { DataByokPage } from './pages/DataByokPage';
+import { LabLeaseGuard } from './shell';
 
 export default function App() {
   const handleBack = () => {
@@ -8,5 +9,12 @@ export default function App() {
         : 'https://0trust.dev/';
   };
 
-  return <DataByokPage onBack={handleBack} />;
+  return (
+    <LabLeaseGuard
+      labSlug="data-byok"
+      labTitle="Data Classification, Masking & BYOK Crypto-Shredding"
+    >
+      <DataByokPage onBack={handleBack} />
+    </LabLeaseGuard>
+  );
 }
