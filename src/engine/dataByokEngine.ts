@@ -383,9 +383,20 @@ export async function decryptEnvelopeWithWebCrypto(
   }
 }
 
-export function resetDataByokEngine(): void {
+export function resetByokEngineStore(): void {
   tenantKekStore.clear();
   tokenVault.clear();
+}
+
+export function resetDataByokEngine(): void {
+  resetByokEngineStore();
+}
+
+export function getByokEngineStoreStats(): { kekCount: number; tokenCount: number } {
+  return {
+    kekCount: tenantKekStore.size,
+    tokenCount: tokenVault.size
+  };
 }
 
 export function getTokenVaultSnapshot(): Array<{

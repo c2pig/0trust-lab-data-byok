@@ -1,3 +1,4 @@
+import { resetByokEngineStore } from './engine/dataByokEngine';
 import { DataByokPage } from './pages/DataByokPage';
 import { LabLeaseGuard } from './shell';
 
@@ -13,6 +14,7 @@ export default function App() {
     <LabLeaseGuard
       labSlug="data-byok"
       labTitle="Data Classification, Masking & BYOK Crypto-Shredding"
+      onLeaseEnded={resetByokEngineStore}
     >
       <DataByokPage onBack={handleBack} />
     </LabLeaseGuard>

@@ -7,6 +7,9 @@ import {
   decryptEnvelopeWithWebCrypto,
   revokeTenantKek,
   evaluateSharedKeyBlastRadiusTrap,
+  getByokEngineStoreStats,
+  getTokenVaultSnapshot,
+  resetByokEngineStore,
   resetDataByokEngine
 } from '../src/engine/dataByokEngine.ts';
 
@@ -112,5 +115,42 @@ describe('Lab 7 Engine (src/engine/dataByokEngine.ts)', () => {
     assert.equal(trap.error_code, 'SHARED_KEK_COLLATERAL_BLAST_RADIUS');
     assert.ok(trap.collateral_tenants_affected.length >= 2);
     assert.ok(trap.collateral_records_at_risk > 0);
+  });
+
+  it('clears tenantKekStore and tokenVault on resetByokEngineStore', async () => {
+    const tenantId = 'tenant-apac-01';
+    const kekState = await provisionTenantKek(tenantId);
+    const dlp = await evaluateEdgeDlp(
+      { email: 'alice@example.com', ssn: '123-45-6789' },
+      CORR_ID,
+      TRACEPARENT
+    );
+    const envelope = await encryptEnvelopeWithWebCrypto(
+      dlp.sanitized_payload,
+      dlp.findings,
+      kekState,
+      CORR_ID,
+      TRACEPARENT
+    );
+
+    assert.ok(getTokenVaultSnapshot().length > 0);
+    assert.deepEqual(getByokEngineStoreStats(), {
+      kekCount: 1,
+      tokenCount: getTokenVaultSnapshot().length
+    });
+
+    resetByokEngineStore();
+
+    assert.deepEqual(getByokEngineStoreStats(), { kekCount: 0, tokenCount: 0 });
+    assert.equal(getTokenVaultSnapshot().length, 0);
+
+    const postResetDecrypt = await decryptEnvelopeWithWebCrypto(
+      envelope,
+      kekState,
+      CORR_ID,
+      TRACEPARENT
+    );
+    assert.equal(postResetDecrypt.ok, false);
+    assert.equal(postResetDecrypt.error_code, 'CRYPTO_SHREDDED_KEY_REVOKED');
   });
 });
