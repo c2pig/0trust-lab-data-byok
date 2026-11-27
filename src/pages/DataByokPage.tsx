@@ -19,7 +19,7 @@ import {
   decryptEnvelopeWithWebCrypto,
   encryptEnvelopeWithWebCrypto,
   provisionTenantKek,
-  resetDataByokEngine,
+  resetByokEngineStore,
   revokeTenantKek
 } from '../engine/dataByokEngine';
 import {
@@ -89,6 +89,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
 
   useEffect(() => {
     let mounted = true;
+    resetByokEngineStore();
     provisionTenantKek(TENANT_ID, 1).then((kekState) => {
       if (mounted) {
         setTenantKey(kekState);
@@ -96,6 +97,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
     });
     return () => {
       mounted = false;
+      resetByokEngineStore();
     };
   }, []);
 
@@ -161,7 +163,7 @@ export function DataByokPage({ onBack }: DataByokPageProps) {
 
   const handleReset = async () => {
     setIsBusy(false);
-    resetDataByokEngine();
+    resetByokEngineStore();
 
     const freshSid = createDataByokSessionId();
     sessionIdRef.current = freshSid;
